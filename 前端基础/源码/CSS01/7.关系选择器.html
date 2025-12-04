@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<style type="text/css">
+			/*关系选择器:
+			 * 后代选择器：只要是这个元素的后代，样式都会发生变化
+			 * div下面的所有h1标签样式都会改变
+			 */
+			/*div h1{
+				color: red;
+			}*/
+			/*关系选择器：子代选择器
+			 只改变子标签的样式*/
+			div>h1{
+				color: royalblue;
+			}
+			span>h1{
+				color: yellow;
+			}
+		</style>
+	</head>
+	<body>
+		<div>
+			<h1>这是标题</h1>
+			<h1>这是标题</h1>
+			<h1>这是标题</h1>
+			<h1>这是标题</h1>
+			<h1>这是标题</h1>
+			<span>
+				<h1>这是标题</h1>
+				<h1>这是标题</h1>
+				<h1>这是标题</h1>
+				<h1>这是标题</h1>
+				<h1>这是标题</h1>
+			</span>
+		</div>
+			
+	</body>
+</html>
