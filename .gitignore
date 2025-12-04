@@ -2,6 +2,7 @@
 个人项目/
 
 # 忽略大文件（超过 GitHub 限制）
+clash/
 
 # Docker 大文件
 
