@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+	</head>
+	<body>
+		<form action="" method="get">
+			<!--email:
+				html5的类型可以增加校验
+			-->
+			<input type="email" name="email" />
+			<!--url-->
+			<input type="url" />
+			<!--color-->
+			<input type="color" />
+			<!--number:
+				min:最小值
+				max:最大值
+				step:步长
+				value:默认值：一定在步长的范围中，否则不能提交
+			-->
+			<input type="number" min="1" max="10" step="3" value="4"/>
+			<!--range-->
+			1<input type="range" min="1" max="10" name="range" step="3"/>10
+			<!--date-->
+			<input type="date" />
+			<!--month-->
+			<input type="month" />
+			<!--week-->
+			<input type="week" />
+			
+			
+			<br />
+			<br />
+			<br />
+			
+			<!--
+				HTML5新增属性：
+				multiple：多选
+				placehoder:默认提示
+				autofocus:自动获取焦点
+				required:必填项
+			-->
+			<input type="text" autofocus="autofocus"/>
+			<input type="text" required="required" />
+			
+			
+			
+			
+			
+			<!--提交按钮-->
+			<input type="submit" />
+		</form>
+	</body>
+</html>

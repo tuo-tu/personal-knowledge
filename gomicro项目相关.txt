@@ -1,0 +1,197 @@
+docker run -d -p 8500:8500 --restart=always --name=consul consul:1.15.4 agent -server -bootstrap -ui -node=1 -client='0.0.0.0'
+
+go install github.com/asim/go-micro/cmd/protoc-gen-micro/v4@latest
+go get github.com/go-micro/plugins/v4/client/grpc
+
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+github.com/go-micro/plugins/v4/registry/consul
+
+protoc --go_out=. --go-grpc_out=. *.proto
+protoc --micro_out=. --micro_opt=paths=source_relative *.proto
+或者 
+protoc --go_out=. trade.proto
+protoc --micro_out=. trade.proto
+
+go get github.com/go-micro/plugins/v4/registry/consul
+
+链路追踪http://192.168.43.144:16686/
+
+docker run -d --name jaeger \
+ -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 \
+ -p5775:5775/udp \
+ -p6831:6831/udp \
+ -p6832:6832/udp \
+ -p5778:5778 \
+ -p16686:16686 \
+ -p14268:14268 \
+ -p9411:9411 \
+ jaegertracing/all-in-one:latest
+
+C:\Users\Mr chen\go
+
+docker pull mlabouardy/hystrix-dashboard失败
+docker run -d -p 8888:9002 --name hystrix-dashboard mlabouardy/hystrix-dashboard:latest
+
+systemctl daemon-reload
+systemctl restart docker
+
+docker run -itd  --name dtm -p 36789:36789 -p 36790:36790  yedf/dtm:latest
+
+redis-server.exe redis.windows.conf
+redis-cli.exe
+
+mysql-product ：
+{
+  "user":"root",
+  "pwd":"123456",
+  "host":"127.0.0.1",
+  "port":"3306",
+  "database":"mall_product"
+}
+
+mysql-trade：
+{
+  "user":"root",
+  "pwd":"123456",
+  "host":"127.0.0.1",
+  "port":"3306",
+  "database":"mall_trade"
+}
+
+mysql-user：
+{
+  "user":"root",
+  "pwd":"123456",
+  "host":"127.0.0.1",
+  "port":"3306",
+  "database":"user_center"
+}
+
+redis：
+{
+    "addr": "127.0.0.1:6379",
+    "password": "",
+		"DB": "0",
+		"poolSize": "30",
+		"minIdleConn": "30"
+}
+
+内网穿透： natapp -authtoken=4135e4c31fe640cb
+
+prom/prometheus:latest
+grafana/grafana:latest
+
+prometheus :
+image: prom/prometheus:latest
+volumes :
+-. /prometheus.yml:/etc/prometheus/prometheus.yml
+ports:-"9090:9090"
+grafana:
+image:/grafana/grafana:latest
+ports :"3000:3000"
+
+localhost;127.*;10.*;172.16.*;172.17.*;172.18.*;172.19.*;172.20.*;172.21.*;172.22.*;172.23.*;172.24.*;172.25.*;172.26.*;172.27.*;172.28.*;172.29.*;172.30.*;172.31.*;192.168.*;127.0.0.1
+
+docker exec -it laomaDJMySQL mysql -p
+docker exec -it laomaDJRedis redis-cli
+
+go get -u google.golang.org/grpc
+github.com/hashicorp/consul/api
+
+go get -u go.opentelemetry.io/otel/sdk/trace
+go get github.com/golang-jwt/jwt/v5
+
+
+
+router.GET("/increase", func(c *gin.Context) {
+		number, _ := strconv.Atoi(c.Request.FormValue("number"))
+		productId, _ := strconv.Atoi(c.Request.FormValue("productId"))
+		productSkuId, _ := strconv.Atoi(c.Request.FormValue("productSkuId"))
+		//处理客户端的唯一标识符
+		uuid := c.Request.Header["Uuid"][0]
+		//将uuid反转
+		cc := common.GetInput(uuid)
+		//平方操作
+		out := common.SQ(cc)
+		//平方和相加
+		sum := 0
+		for o := range out {
+			sum += o
+		}
+		//Token校验
+		//拼接token请求信息
+		tokenReq := &proto.TokenReq{
+			Uuid: uuid,
+		}
+		tokenResp, err := GetUserTokenClient.GetUserToken(context.Background(), tokenReq)
+		//拼接响应信息
+		respErr := &proto.AddCartResp{} //resp作用？
+		if err != nil || tokenResp.IsLogin == false {
+			log.Println("GetUserToken err :", err)
+			common.RespFail(c.Writer, respErr, "未登录")
+			return
+		}
+		log.Println("GetUserToken success : ", tokenResp)
+		//拼接AddCart请求信息
+		req := &proto.AddCartReq{
+			Number:       int32(number),
+			ProductId:    int32(productId),
+			ProductSkuId: int32(productSkuId),
+			UserId:       int32(sum), //用sum作为UserId
+		}
+		resp := &proto.AddCartResp{}
+		//商品详情req
+		reqDetail := &proto.ProductDetailReq{
+			Id: int32(productId),
+		}
+		//商品详情响应信息，respDetail虽然是切片，但实际只有一条数据
+		respDetail, err := ShowProductDetailClient.ShowProductDetail(context.Background(), reqDetail)
+		if err != nil {
+			log.Println("ShowProductDetail err :", err)
+			common.RespFail(c.Writer, respErr, "查询商品详情失败！")
+			return
+		}
+		if respDetail != nil {
+			req.ProductName = respDetail.ProductDetail[0].Name
+			req.ProductMainPicture = respDetail.ProductDetail[0].MainPicture
+		}
+		//商品SKU详情
+		reqDetail.Id = req.ProductSkuId //复用reqDetail.Id字段
+		respSkuDetail, err := ShowDetailSkuClient.ShowDetailSku(context.Background(), reqDetail)
+		//关键步骤，判断库存是否充足
+		if respSkuDetail.ProductSku[0].Stock < req.Number {
+			common.RespFail(c.Writer, &proto.AddCartResp{}, "库存不足，添加失败")
+			return
+		}
+		sku := respSkuDetail.ProductSku[0]
+		sku.Stock -= req.Number
+		//开始更新库存
+		updateSkuReq := &proto.UpdateSkuReq{
+			ProductSku: sku,
+		}
+		respUpdate, err := UpdateSkuClient.UpdateSku(context.Background(), updateSkuReq)
+		if err != nil {
+			log.Println("UpdateSku err :", err)
+			common.RespFail(c.Writer, resp, "更新库存失败")
+			return
+		}
+		log.Println("UpdateSkuClient resp :", respUpdate.IsSuccess)
+		//这里才开始往购物车加东西
+		resp, err = AddCartClient.AddCart(context.Background(), req)
+		//根据响应做输出
+		if err != nil {
+			log.Println("addCart err ", err)
+			////添加购物车失败为什么要将库存增加？把扣减的库存加回去，因为在添加购物车之前做了先做了商品库存的扣减
+			updateSkuReq.ProductSku.Stock += req.Number
+			//回滚库存
+			_, err = UpdateSkuClient.UpdateSku(context.Background(), updateSkuReq)
+			log.Println("rollback sku is Err :", err)
+			common.RespFail(c.Writer, resp, "添加购物车失败")
+			return
+		}
+		resp.ProductSkuSimple = respSkuDetail.ProductSku[0]
+		resp.ProductSimple = respDetail.ProductDetail[0]
+		log.Println("/AddCart resp :", resp)
+		common.RespOK(c.Writer, resp, "请求成功")
+	})
