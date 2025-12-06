@@ -1229,7 +1229,32 @@ map 并不是一个线程安全的数据结构。如果多个线程边遍历，�
 
 **附加：map插入和获取元素的过程。**
 
+**获取：**
 
+1. **哈希计算**
+   - 调用 runtime 的哈希函数（依据 key 的类型：整数、字符串、数组、结构体、接口等有不同实现）。
+   - Go 的哈希会结合一个运行时随机种子（防止哈希冲突攻击），因此 map 的哈希分布在不同进程/启动时可能不同。
+2. **确定 bucket 索引**
+   - map 有一个参数 `B` 表示 bucket 的位数（table size = 2^B buckets）。
+   - 取哈希的低 `B` 位（通常 `hash & (2^B - 1)`）确定**初始 bucket 索引。**
+3. **访问 bucket**
+   - 在该 bucket 中，runtime 把多个键值槽（slots）排列（默认每个 bucket 存放多个键，比如 8 个 slot。
+   - 每个 slot 保存 key 的部分摘要（topbits 或者 key 的散列高位）用于**快速排除大部分不匹配的键。**
+4. **比较 key**
+   - 若 topbits 符合，再进行**真正的 key 比较**（按类型比较）：
+   - 如果相等，读取相应 slot 的 value 返回。
+5. **处理冲突/溢出**
+   - 如果在 bucket 的所有 slots 都没有匹配，且该 bucket 有 overflow bucket（链表/数组形式），runtime 会继续在 overflow 链上查找。
+   - 若所有相关 bucket 都查完仍无匹配，说明键不存在。
+
+**插入：**
+
+1. 计算 key 的哈希值（Hash）
+2. 定位到应该放入的 bucket
+3. 在 bucket 中找空 slot（如果发现相同的key值，就更新）
+4. 若 bucket 满，放入 overflow bucket
+5. 存入 key 和 value
+6. 必要时触发扩容（参考前面的扩容时机）
 
 ## 4. Channel面试题
 
