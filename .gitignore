@@ -3,7 +3,8 @@
 
 # 忽略大文件（超过 GitHub 限制）
 clash/
-
+.vscode/
+.cursor/
 # Docker 大文件
 
 # PDF 大文件
